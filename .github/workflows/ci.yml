@@ -2,14 +2,14 @@ name: Catalogo
 
 on:
   push:
-    branches:[ develop ]
+    branches: [ develop ]
   pull_request:
     branches: [main]
 
 jobs:
   build:
-    runs_on: ubuntu_latest
-    spetps:
+    runs_on: ubuntu-latest
+    steps:
       - uses: actions/checkout@v4
 
       - name: Setup Java 21
@@ -18,8 +18,8 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: maven
-
-      -name: validar proyecto
+          
+      - name: validar proyecto
         run: |
           chmod +x mvnw
           ./mvnw test
