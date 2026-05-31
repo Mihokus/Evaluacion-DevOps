@@ -21,7 +21,7 @@ services:
     ports:
       - "8082:8082"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/huertohogar_catalog?useSSL=false&serverTimezone=America/Santiago
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/huertohogar_catalog?useSSL=false&serverTimezone=America/Santiago&allowPublicKeyRetrieval=true
       SPRING_DATASOURCE_USERNAME: test
       SPRING_DATASOURCE_PASSWORD: test
       JWT_SECRET: SDu+O89zOOVF6HnYsPnmhtkWNpE3U3ZG6Q2u4rwsf9c=
