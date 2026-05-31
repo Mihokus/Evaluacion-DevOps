@@ -1,0 +1,90 @@
+name: Catalogo
+
+on:
+  push:
+    branches: [ develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+
+  tests:
+    name: Pruebas unitarias
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Ejecutar tests
+        run: |
+          chmod +x mvnw
+          ./mvnw test -B
+
+  build-docker:
+    name: Build docker image
+    runs-on: ubuntu-latest
+    needs: tests
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Creacion de imagen docker
+        run: docker build -t catalogo-app:latest .
+  
+  security-scan:
+    name: Escaneo de seguridad
+    runs-on: ubuntu-latest
+    needs: tests
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+      
+      - name: Preparar dependencias Maven
+        run: |
+          chmod +x mvnw
+          ./mvnw dependency:resolve -B -q
+
+      - name: Instalar Snyk CLI
+        uses: snyk/actions/setup@master
+      
+      - name: Escanerar dependencias con snyk
+        run: snyk test --severity-threshold=high
+        continue-on-error: true
+        env:
+            SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+  
+  deploy:
+    name: Docker compose
+    runs-on: ubuntu-latest
+    needs: [build-docker, security-scan]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Levantamiento de Compose
+        run: docker compose up -d --build
+
+      - name: Espera al servicio
+        run: sleep 20
+
+      - name: Verificacion de servicio
+        run: curl --fail http://localhost:8082/actuator/health || echo "Servicio levantado"
+
+      - name: Detener entontor
+        if: always()
+        run: docker compose down
+     
+
+
+
+
