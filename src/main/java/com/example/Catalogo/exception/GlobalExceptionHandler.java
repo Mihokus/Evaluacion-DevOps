@@ -12,7 +12,11 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 
 import java.time.LocalDateTime;
 import java.util.stream.Collectors;
-
+/**
+ * Manejador global de excepciones para toda la aplicación.
+ * Centraliza las respuestas de error y devuelve un objeto ApiError
+ * con información estandarizada para el cliente.
+ */
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
