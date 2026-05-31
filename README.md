@@ -1,6 +1,6 @@
 # Microservicio catalogo
 
-Este proyecto consiste en un microservicio de catálogo desarrollado en cursos anteriores con Spring Boot. El cual se utilizó para poder aplicar prácticas de DevOps, enfocándose especialmente en la automatización, buenas prácticas y control de versiones.
+Este proyecto consiste en un microservicio de catálogo desarrollado en cursos anteriores con Spring Boot. El cual se utilizó para poder aplicar prácticas de DevOps, enfocándose especialmente en la automatización, buenas prácticas y control de versiones. Se realizan las correciones de EV1.
 
 ## Estrategia de trabajo GitFlow
 Para este proyecto utilicé el modelo GitFlow.
