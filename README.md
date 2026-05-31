@@ -28,4 +28,4 @@ Durante esta evaluación he aprendido a automatizar las tareas con GitHub Action
 
 Durante el proceso, cometí algunos errores en la configuración del pipeline, lo que me permitió notar que la herramienta te avisa de forma inmediata si existe algún error sin ella, habría tenido que realizar pruebas manuales una por una hasta hallar el fallo.
 
-Como dato final, considero que GitHub Actions es una herramienta fundamental para lograr un desarrollo continuo y más rápido. Y que nos demuestra cómo es que se trabaja en el mundo real con estas herramientas y siguiendo las buenas prácticas, nos acerca cada vez más a cómo debería verse un profesional.
+Como dato final, considero que GitHub Actions es una herramienta fundamental para lograr un desarrollo continuo y más rápido. Y que nos demuestra cómo es que se trabaja en el mundo real con estas herramientas y siguiendo las buenas prácticas, nos acerca cada vez más a cómo debería verse un profesional..
