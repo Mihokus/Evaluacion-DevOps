@@ -21,6 +21,9 @@ public class JwtService {
 
     @Value("${jwt.expiration}")
     private long jwtExpirationMs;
+    /**
+     * Extrae el nombre de usuario almacenado en el token JWT.
+     */
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
@@ -30,6 +33,9 @@ public class JwtService {
         final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
     }
+    /**
+     * Genera un token JWT para el usuario autenticado.
+     */
 
     public String generateToken(UserDetails userDetails) {
         Date now = new Date();
@@ -42,6 +48,9 @@ public class JwtService {
                 .signWith(getSignInKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
+     /**
+     * Valida que el token pertenezca al usuario y no esté expirado.
+     */
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
         final String username = extractUsername(token);
