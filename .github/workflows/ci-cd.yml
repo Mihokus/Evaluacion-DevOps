@@ -49,6 +49,11 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: maven
+      
+      - name: Preparar dependencias Maven
+        run: |
+          chmod +x mvnw
+          ./mvnw dependency:resolve -B -q
 
       - name: Instalar Snyk CLI
         uses: snyk/actions/setup@master
