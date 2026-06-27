@@ -1,0 +1,190 @@
+{
+  "title": "Catálogo Microservicio – Dashboard DevOps",
+  "uid": "catalogo-devops",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "30s",
+  "tags": ["catalogo", "spring-boot", "devops"],
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Estado del Servicio",
+      "type": "stat",
+      "gridPos": { "x": 0, "y": 0, "w": 4, "h": 4 },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "up{job=\"catalogo-app\"}",
+          "legendFormat": "Servicio"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "thresholds": {
+          "steps": [
+            { "value": 0, "color": "red" },
+            { "value": 1, "color": "green" }
+          ]
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Uso de Heap JVM (MB)",
+      "type": "gauge",
+      "gridPos": { "x": 4, "y": 0, "w": 5, "h": 4 },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "jvm_memory_used_bytes{area=\"heap\", job=\"catalogo-app\"} / 1024 / 1024",
+          "legendFormat": "Heap usado"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "unit": "MB",
+        "thresholds": {
+          "steps": [
+            { "value": 0, "color": "green" },
+            { "value": 200, "color": "yellow" },
+            { "value": 400, "color": "red" }
+          ]
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "CPU del Proceso (%)",
+      "type": "gauge",
+      "gridPos": { "x": 9, "y": 0, "w": 5, "h": 4 },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "process_cpu_usage{job=\"catalogo-app\"} * 100",
+          "legendFormat": "CPU %"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "unit": "percent",
+        "thresholds": {
+          "steps": [
+            { "value": 0, "color": "green" },
+            { "value": 50, "color": "yellow" },
+            { "value": 80, "color": "red" }
+          ]
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Hilos JVM Activos",
+      "type": "stat",
+      "gridPos": { "x": 14, "y": 0, "w": 4, "h": 4 },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "jvm_threads_live_threads{job=\"catalogo-app\"}",
+          "legendFormat": "Hilos"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Tasa de Solicitudes HTTP (req/s)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "rate(http_server_requests_seconds_count{job=\"catalogo-app\"}[1m])",
+          "legendFormat": "{{method}} {{uri}} – {{status}}"
+        }
+      ],
+      "options": { "unit": "reqps" }
+    },
+    {
+      "id": 6,
+      "title": "Tasa de Errores HTTP 5xx (req/s)",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "rate(http_server_requests_seconds_count{job=\"catalogo-app\", status=~\"5..\"}[1m])",
+          "legendFormat": "Errores 5xx – {{uri}}"
+        }
+      ],
+      "options": {
+        "unit": "reqps",
+        "thresholds": { "steps": [{ "value": 0.01, "color": "red" }] }
+      }
+    },
+    {
+      "id": 7,
+      "title": "Latencia P95 por Endpoint (ms)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "histogram_quantile(0.95, rate(http_server_requests_seconds_bucket{job=\"catalogo-app\"}[5m])) * 1000",
+          "legendFormat": "P95 – {{uri}}"
+        }
+      ],
+      "options": { "unit": "ms" }
+    },
+    {
+      "id": 8,
+      "title": "Uso de Memoria JVM – Heap vs Non-Heap (MB)",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 12, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "jvm_memory_used_bytes{job=\"catalogo-app\", area=\"heap\"} / 1024 / 1024",
+          "legendFormat": "Heap"
+        },
+        {
+          "datasource": "Prometheus",
+          "expr": "jvm_memory_used_bytes{job=\"catalogo-app\", area=\"nonheap\"} / 1024 / 1024",
+          "legendFormat": "Non-Heap"
+        }
+      ],
+      "options": { "unit": "MB" }
+    },
+    {
+      "id": 9,
+      "title": "Conexiones DB (HikariCP activas)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 20, "w": 12, "h": 6 },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "hikaricp_connections_active{job=\"catalogo-app\"}",
+          "legendFormat": "Conexiones activas"
+        },
+        {
+          "datasource": "Prometheus",
+          "expr": "hikaricp_connections_idle{job=\"catalogo-app\"}",
+          "legendFormat": "Conexiones idle"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "title": "Errores HTTP 4xx por Minuto",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 20, "w": 12, "h": 6 },
+      "targets": [
+        {
+          "datasource": "Prometheus",
+          "expr": "rate(http_server_requests_seconds_count{job=\"catalogo-app\", status=~\"4..\"}[1m])",
+          "legendFormat": "4xx – {{status}} {{uri}}"
+        }
+      ]
+    }
+  ]
+}
