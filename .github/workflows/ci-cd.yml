@@ -1,15 +1,19 @@
-name: Catalogo
+name: Catalogo CI/CD
 
 on:
   push:
-    branches: [ develop ]
+    branches: [develop, main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
+
+env:
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/catalogo-app
+  IMAGE_TAG: ${{ github.sha }}
 
 jobs:
-
+  
   tests:
-    name: Pruebas unitarias
+    name: Tests unitarios y cobertura
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,26 +22,32 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: '21'
-          distribution: 'temurin'
+          distribution: temurin
           cache: maven
 
-      - name: Ejecutar tests
+      - name: Ejecutar tests con JaCoCo
         run: |
           chmod +x mvnw
-          ./mvnw test -B
+          ./mvnw verify -B
 
-  build-docker:
-    name: Build docker image
-    runs-on: ubuntu-latest
-    needs: tests
-    steps:
-      - uses: actions/checkout@v4
+      - name: Guardar reporte JaCoCo
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jacoco-report
+          path: target/site/jacoco/
+          retention-days: 7
 
-      - name: Creacion de imagen docker
-        run: docker build -t catalogo-app:latest .
-  
-  security-scan:
-    name: Escaneo de seguridad
+      - name: Guardar resultados de tests
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: surefire-reports
+          path: target/surefire-reports/
+          retention-days: 7
+
+  sast:
+    name: SAST con SpotBugs
     runs-on: ubuntu-latest
     needs: tests
     steps:
@@ -47,44 +57,217 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: '21'
-          distribution: 'temurin'
+          distribution: temurin
           cache: maven
-      
-      - name: Preparar dependencias Maven
+
+      - name: Compilar y revisar con SpotBugs
+        run: |
+          chmod +x mvnw
+          ./mvnw compile spotbugs:check -B
+
+      - name: Guardar reporte SpotBugs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: spotbugs-report
+          path: target/spotbugs/
+          retention-days: 7
+
+  sonar:
+    name: SonarCloud Quality Gate
+    runs-on: ubuntu-latest
+    needs: tests
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: temurin
+          cache: maven
+
+      - name: Generar reporte de cobertura para Sonar
+        run: |
+          chmod +x mvnw
+          ./mvnw verify -DskipSpotBugs -B
+
+      - name: Analisis SonarCloud
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          ./mvnw sonar:sonar \
+            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }} \
+            -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }} \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
+            -Dsonar.qualitygate.wait=true \
+            -B
+
+  build-push:
+    name: Build y Push imagen Docker
+    runs-on: ubuntu-latest
+    needs: [sast, sonar]
+    outputs:
+      image: ${{ steps.meta.outputs.tags }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login a GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Metadata de la imagen
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=sha-
+            type=ref,event=branch
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/develop' }}
+
+      - name: Build y push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+
+  security-scan:
+    name: Seguridad con Snyk
+    runs-on: ubuntu-latest
+    needs: build-push
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: temurin
+          cache: maven
+
+      - name: Resolver dependencias
         run: |
           chmod +x mvnw
           ./mvnw dependency:resolve -B -q
 
-      - name: Instalar Snyk CLI
+      - name: Instalar Snyk
         uses: snyk/actions/setup@master
-      
-      - name: Escanerar dependencias con snyk
-        run: snyk test --severity-threshold=high
-        continue-on-error: true
+
+      - name: Escanear dependencias
+        run: snyk test --severity-threshold=high --all-projects
         env:
-            SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-  
-  deploy:
-    name: Docker compose
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      - name: Escanear imagen del contenedor
+        run: snyk container test ${{ env.IMAGE_NAME }}:sha-${{ github.sha }} --severity-threshold=high
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        continue-on-error: true
+
+  deploy-k8s:
+    name: Deploy en Kubernetes
     runs-on: ubuntu-latest
-    needs: [build-docker, security-scan]
+    needs: security-scan
     steps:
       - uses: actions/checkout@v4
 
-      - name: Levantamiento de Compose
-        run: docker compose up -d --build
+      - name: Levantar minikube
+        uses: medyagh/setup-minikube@master
+        with:
+          minikube-version: '1.33.1'
+          kubernetes-version: v1.30.0
+          driver: docker
+          memory: 3800
+          cpus: 2
 
-      - name: Espera al servicio
-        run: sleep 20
+      - name: Verificar cluster
+        run: |
+          kubectl cluster-info
+          kubectl get nodes
 
-      - name: Verificacion de servicio
-        run: curl --fail http://localhost:8082/actuator/health || echo "Servicio levantado"
+      - name: Login a GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | \
+            docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-      - name: Detener entontor
-        if: always()
-        run: docker compose down
-     
+      - name: Cargar imagen en minikube
+        run: |
+          docker pull ${{ env.IMAGE_NAME }}:sha-${{ env.IMAGE_TAG }}
+          minikube image load ${{ env.IMAGE_NAME }}:sha-${{ env.IMAGE_TAG }}
 
+      - name: Crear namespace, secrets y configmap
+        run: |
+          kubectl apply -f k8s/namespace.yaml
+          kubectl apply -f k8s/secret.yaml
+          kubectl apply -f k8s/configmap.yaml
 
+      - name: Desplegar MySQL
+        run: |
+          kubectl apply -f k8s/mysql/pvc.yaml
+          kubectl apply -f k8s/mysql/deployment.yaml
+          kubectl apply -f k8s/mysql/service.yaml
+          kubectl rollout status deployment/mysql -n catalogo --timeout=120s
 
+      - name: Desplegar microservicio
+        run: |
+          sed 's|IMAGE_PLACEHOLDER|${{ env.IMAGE_NAME }}:sha-${{ env.IMAGE_TAG }}|g' \
+            k8s/app/deployment.yaml | kubectl apply -f -
+          kubectl apply -f k8s/app/service.yaml
+          kubectl rollout status deployment/catalogo-app -n catalogo --timeout=180s
 
+      - name: Desplegar Prometheus y Grafana
+        run: |
+          kubectl apply -f k8s/monitoring/prometheus-configmap.yaml
+          kubectl apply -f k8s/monitoring/prometheus.yaml
+          kubectl apply -f k8s/monitoring/grafana.yaml
+          kubectl rollout status deployment/prometheus -n catalogo --timeout=120s
+          kubectl rollout status deployment/grafana -n catalogo --timeout=120s
+
+      - name: Ver estado de los pods
+        run: kubectl get all -n catalogo
+
+  smoke-test:
+    name: Smoke test observabilidad
+    runs-on: ubuntu-latest
+    needs: deploy-k8s
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Levantar minikube
+        uses: medyagh/setup-minikube@master
+        with:
+          minikube-version: '1.33.1'
+          kubernetes-version: v1.30.0
+
+      - name: Verificar health del microservicio
+        run: |
+          kubectl port-forward service/catalogo-service 8082:8082 -n catalogo &
+          sleep 10
+          curl --fail --retry 5 --retry-delay 5 http://localhost:8082/actuator/health
+          echo "Health OK"
+
+      - name: Verificar que las metricas Prometheus esten disponibles
+        run: |
+          METRICS=$(curl --fail http://localhost:8082/actuator/prometheus)
+          echo "$METRICS" | grep -q "jvm_memory_used_bytes" && echo "Metricas JVM OK"
+          echo "$METRICS" | grep -q "http_server_requests" && echo "Metricas HTTP OK"
+
+      - name: Verificar que Prometheus esta scrapeando el microservicio
+        run: |
+          kubectl port-forward service/prometheus-service 9090:9090 -n catalogo &
+          sleep 10
+          TARGETS=$(curl --fail http://localhost:9090/api/v1/targets)
+          echo "$TARGETS" | grep -q "catalogo-app" && echo "Prometheus scraping OK"

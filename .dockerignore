@@ -1,0 +1,9 @@
+.git
+.gitignore
+.github
+*.md
+target/
+.mvn/wrapper/maven-wrapper.jar
+docker-compose*.yml
+k8s/
+monitoring/

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <Match>
+        <Bug category="CORRECTNESS"/>
+        <Package name="~com\.example\.Catalogo\.(dto|entity).*"/>
+    </Match>
+    <Match>
+        <Package name="~com\.example\.Catalogo\.(config|security).*"/>
+    </Match>
+</FindBugsFilter>

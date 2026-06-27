@@ -1,32 +1,86 @@
 services:
+
   mysql-db:
     image: mysql:8.0
     container_name: catalogo-mysql
+    restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
       MYSQL_DATABASE: huertohogar_catalog
-      MYSQL_USER: test
-      MYSQL_PASSWORD: test
+      MYSQL_USER: ${MYSQL_USER:-test}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-test}
     ports:
       - "3307:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - catalogo-net
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-root}"]
       interval: 10s
       timeout: 5s
       retries: 5
-  
+
   catalogo-app:
     build: .
     container_name: catalogo-app
+    restart: unless-stopped
     ports:
       - "8082:8082"
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/huertohogar_catalog?useSSL=false&serverTimezone=America/Santiago
-      SPRING_DATASOURCE_USERNAME: test
-      SPRING_DATASOURCE_PASSWORD: test
-      JWT_SECRET: SDu+O89zOOVF6HnYsPnmhtkWNpE3U3ZG6Q2u4rwsf9c=
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-test}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-test}
+      JWT_SECRET: ${JWT_SECRET:-SDu+O89zOOVF6HnYsPnmhtkWNpE3U3ZG6Q2u4rwsf9c=}
       JWT_EXPIRATION: 3600000
     depends_on:
       mysql-db:
         condition: service_healthy
-      
+    networks:
+      - catalogo-net
+
+  prometheus:
+    image: prom/prometheus:v2.51.2
+    container_name: catalogo-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/usr/share/prometheus/console_libraries"
+      - "--web.console.templates=/usr/share/prometheus/consoles"
+    networks:
+      - catalogo-net
+    depends_on:
+      - catalogo-app
+
+  grafana:
+    image: grafana/grafana:10.4.2
+    container_name: catalogo-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_PATHS_PROVISIONING: /etc/grafana/provisioning
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    networks:
+      - catalogo-net
+    depends_on:
+      - prometheus
+
+volumes:
+  mysql-data:
+  prometheus-data:
+  grafana-data:
+
+networks:
+  catalogo-net:
+    driver: bridge
