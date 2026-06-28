@@ -10,15 +10,10 @@ metadata:
     prometheus.io/path: "/actuator/prometheus"
     prometheus.io/port: "8082"
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: catalogo-app
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 0
-      maxSurge: 1
   template:
     metadata:
       labels:
@@ -31,7 +26,7 @@ spec:
       containers:
         - name: catalogo-app
           image: IMAGE_PLACEHOLDER
-          imagePullPolicy: Never          
+          imagePullPolicy: Always
           ports:
             - containerPort: 8082
           envFrom:
@@ -57,15 +52,9 @@ spec:
             httpGet:
               path: /actuator/health
               port: 8082
-            initialDelaySeconds: 30
+            initialDelaySeconds: 120
             periodSeconds: 10
-            failureThreshold: 5
-          livenessProbe:
-            httpGet:
-              path: /actuator/health
-              port: 8082
-            initialDelaySeconds: 60
-            periodSeconds: 30
+            failureThreshold: 10
           resources:
             requests:
               memory: "256Mi"
