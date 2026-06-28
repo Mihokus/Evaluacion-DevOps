@@ -227,6 +227,14 @@ jobs:
           echo "Esperando 90 segundos para que MySQL inicie..."
           sleep 90
           kubectl get pods -n catalogo
+          
+      - name: Crear secret para GHCR en Kubernetes
+        run: |
+          kubectl create secret docker-registry ghcr-secret \
+            --docker-server=ghcr.io \
+            --docker-username=mihokus \
+            --docker-password=${{ secrets.CR_PAT }} \
+            --namespace=catalogo
 
       - name: Desplegar microservicio
         run: |

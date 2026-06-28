@@ -23,6 +23,8 @@ spec:
         prometheus.io/path: "/actuator/prometheus"
         prometheus.io/port: "8082"
     spec:
+      imagePullSecrets:
+        - name: ghcr-secret
       containers:
         - name: catalogo-app
           image: IMAGE_PLACEHOLDER
