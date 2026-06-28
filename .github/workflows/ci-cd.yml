@@ -184,7 +184,7 @@ jobs:
           minikube-version: '1.33.1'
           kubernetes-version: v1.30.0
           driver: docker
-          memory: 3800
+          memory: 5000
           cpus: 2
 
       - name: Verificar cluster
@@ -194,8 +194,8 @@ jobs:
 
       - name: Login a GHCR
         run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | \
-            docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          echo "${{ secrets.CR_PAT }}" | \
+            docker login ghcr.io -u mihokus --password-stdin
 
       - name: Cargar imagen en minikube
         run: |
