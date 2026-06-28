@@ -230,10 +230,12 @@ jobs:
 
       - name: Desplegar microservicio
         run: |
-          sed 's|IMAGE_PLACEHOLDER|${{ env.IMAGE_NAME }}:latest|g' \
+          echo "Esperando que MySQL este completamente listo..."
+          sleep 60
+          sed 's|IMAGE_PLACEHOLDER|ghcr.io/mihokus/catalogo-app:latest|g' \
             k8s/app/deployment.yaml | kubectl apply -f -
           kubectl apply -f k8s/app/service.yaml
-          kubectl rollout status deployment/catalogo-app -n catalogo --timeout=180s
+          kubectl rollout status deployment/catalogo-app -n catalogo --timeout=300s
 
       - name: Desplegar Prometheus y Grafana
         run: |
