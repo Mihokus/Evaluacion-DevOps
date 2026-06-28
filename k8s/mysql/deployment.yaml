@@ -43,9 +43,12 @@ spec:
               mountPath: /var/lib/mysql
           readinessProbe:
             exec:
-              command: ["mysqladmin", "ping", "-h", "localhost"]
-            initialDelaySeconds: 60
-            periodSeconds: 15
+              command:
+                - bash
+                - -c
+                - "mysql -u root -p${MYSQL_ROOT_PASSWORD} -e 'SELECT 1'"
+            initialDelaySeconds: 30
+            periodSeconds: 10
             failureThreshold: 10
           resources:
             requests:

@@ -224,9 +224,7 @@ jobs:
 
       - name: Esperar MySQL
         run: |
-          echo "Esperando que MySQL este listo..."
-          sleep 90
-          kubectl get pods -n catalogo
+          kubectl wait --for=condition=ready pod -l app=mysql -n catalogo --timeout=300s
 
       - name: Desplegar microservicio
         run: |
