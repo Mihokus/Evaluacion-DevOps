@@ -46,7 +46,7 @@ spec:
               command:
                 - bash
                 - -c
-                - "mysql -u root -p${MYSQL_ROOT_PASSWORD} -e 'SELECT 1'"
+                - "mysql -u root -proot -e 'SELECT 1'"
             initialDelaySeconds: 30
             periodSeconds: 10
             failureThreshold: 10
