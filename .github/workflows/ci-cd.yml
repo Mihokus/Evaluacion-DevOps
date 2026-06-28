@@ -256,7 +256,7 @@ jobs:
           minikube-version: '1.33.1'
           kubernetes-version: v1.30.0
           driver: docker
-          memory: 4096
+          memory: 5000
           cpus: 2
 
       - name: Verificar health del microservicio
