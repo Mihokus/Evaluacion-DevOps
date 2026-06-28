@@ -213,7 +213,17 @@ jobs:
           kubectl apply -f k8s/mysql/pvc.yaml
           kubectl apply -f k8s/mysql/deployment.yaml
           kubectl apply -f k8s/mysql/service.yaml
-          kubectl rollout status deployment/mysql -n catalogo --timeout=120s
+
+      - name: Ver logs de MySQL
+        if: always()
+        run: |
+          sleep 30
+          kubectl get pods -n catalogo
+          kubectl describe pod -l app=mysql -n catalogo
+          kubectl logs -l app=mysql -n catalogo --tail=50 || true
+
+      - name: Esperar MySQL
+        run: kubectl rollout status deployment/mysql -n catalogo --timeout=300s
 
       - name: Desplegar microservicio
         run: |
