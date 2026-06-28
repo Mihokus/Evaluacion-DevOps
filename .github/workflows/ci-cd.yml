@@ -117,7 +117,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Login a GitHub Container Registry
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u mihokus --password-stdin
+        run: echo "${{ secrets.CR_PAT }}" | docker login ghcr.io -u mihokus --password-stdin
 
       - name: Metadata de la imagen
         id: meta
