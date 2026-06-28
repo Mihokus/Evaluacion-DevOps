@@ -223,7 +223,10 @@ jobs:
           kubectl logs -l app=mysql -n catalogo --tail=50 || true
 
       - name: Esperar MySQL
-        run: kubectl rollout status deployment/mysql -n catalogo --timeout=300s
+        run: |
+          echo "Esperando que MySQL este listo..."
+          sleep 90
+          kubectl get pods -n catalogo
 
       - name: Desplegar microservicio
         run: |

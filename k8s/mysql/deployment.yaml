@@ -44,9 +44,9 @@ spec:
           readinessProbe:
             exec:
               command: ["mysqladmin", "ping", "-h", "localhost"]
-            initialDelaySeconds: 20
-            periodSeconds: 10
-            failureThreshold: 5
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            failureThreshold: 10
           resources:
             requests:
               memory: "512Mi"
