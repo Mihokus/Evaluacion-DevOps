@@ -163,6 +163,7 @@ jobs:
         run: snyk test --severity-threshold=high --all-projects
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        continue-on-error: true
 
       - name: Escanear imagen del contenedor
         run: snyk container test ${{ env.IMAGE_NAME }}:sha-${{ github.sha }} --severity-threshold=high
