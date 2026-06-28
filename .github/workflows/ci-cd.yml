@@ -199,8 +199,8 @@ jobs:
 
       - name: Cargar imagen en minikube
         run: |
-          docker pull ${{ env.IMAGE_NAME }}:sha-${{ env.IMAGE_TAG }}
-          minikube image load ${{ env.IMAGE_NAME }}:sha-${{ env.IMAGE_TAG }}
+          docker pull ${{ env.IMAGE_NAME }}:latest
+          minikube image load ${{ env.IMAGE_NAME }}:latest
 
       - name: Crear namespace, secrets y configmap
         run: |
@@ -217,7 +217,7 @@ jobs:
 
       - name: Desplegar microservicio
         run: |
-          sed 's|IMAGE_PLACEHOLDER|${{ env.IMAGE_NAME }}:sha-${{ env.IMAGE_TAG }}|g' \
+          sed 's|IMAGE_PLACEHOLDER|${{ env.IMAGE_NAME }}:latest|g' \
             k8s/app/deployment.yaml | kubectl apply -f -
           kubectl apply -f k8s/app/service.yaml
           kubectl rollout status deployment/catalogo-app -n catalogo --timeout=180s
