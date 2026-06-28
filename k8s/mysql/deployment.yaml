@@ -41,16 +41,6 @@ spec:
           volumeMounts:
             - name: mysql-storage
               mountPath: /var/lib/mysql
-          readinessProbe:
-            exec:
-              command:
-                - bash
-                - -c
-                - "mysql -u root -proot -e 'SELECT 1'"
-            initialDelaySeconds: 30
-            periodSeconds: 10
-            timeoutSeconds: 5
-            failureThreshold: 10
           resources:
             requests:
               memory: "512Mi"
