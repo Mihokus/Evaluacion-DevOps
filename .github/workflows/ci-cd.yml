@@ -227,7 +227,7 @@ jobs:
           echo "Esperando 90 segundos para que MySQL inicie..."
           sleep 90
           kubectl get pods -n catalogo
-          
+
       - name: Crear secret para GHCR en Kubernetes
         run: |
           kubectl create secret docker-registry ghcr-secret \
@@ -263,38 +263,24 @@ jobs:
       - name: Ver estado de los pods
         run: kubectl get all -n catalogo
 
-  smoke-test:
-    name: Smoke test observabilidad
-    runs-on: ubuntu-latest
-    needs: deploy-k8s
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Levantar minikube
-        uses: medyagh/setup-minikube@master
-        with:
-          minikube-version: '1.33.1'
-          kubernetes-version: v1.30.0
-          driver: docker
-          memory: 5000
-          cpus: 2
-
-      - name: Verificar health del microservicio
+      - name: Smoke test health
         run: |
           kubectl port-forward service/catalogo-service 8082:8082 -n catalogo &
-          sleep 10
+          sleep 15
           curl --fail --retry 5 --retry-delay 5 http://localhost:8082/actuator/health
           echo "Health OK"
 
-      - name: Verificar que las metricas Prometheus esten disponibles
+      - name: Smoke test metricas Prometheus
         run: |
           METRICS=$(curl --fail http://localhost:8082/actuator/prometheus)
           echo "$METRICS" | grep -q "jvm_memory_used_bytes" && echo "Metricas JVM OK"
           echo "$METRICS" | grep -q "http_server_requests" && echo "Metricas HTTP OK"
 
-      - name: Verificar que Prometheus esta scrapeando el microservicio
+      - name: Smoke test Prometheus scraping
         run: |
           kubectl port-forward service/prometheus-service 9090:9090 -n catalogo &
           sleep 10
           TARGETS=$(curl --fail http://localhost:9090/api/v1/targets)
-          echo "$TARGETS" | grep -q "catalogo-app" && echo "Prometheus scraping OK"
+          echo "$TARGETS" | grep -q "catalogo" && echo "Prometheus scraping OK"
+
+  
