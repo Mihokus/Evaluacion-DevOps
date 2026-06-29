@@ -47,7 +47,8 @@ public class SecurityConfig {
                                 "/error",
                                 "/auth/refresh",
                                 "/productos/**",
-                                "/categorias/**"
+                                "/categorias/**",
+                                "/actuator/**"
                         ).permitAll()
 
                         .requestMatchers(
