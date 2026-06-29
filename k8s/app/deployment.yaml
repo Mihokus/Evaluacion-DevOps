@@ -33,7 +33,7 @@ spec:
             - containerPort: 8082
           env:
             - name: SPRING_DATASOURCE_URL
-              value: "jdbc:mysql://mysql-service:3306/huertohogar_catalog?useSSL=false&serverTimezone=America/Santiago"
+              value: "jdbc:mysql://mysql-service:3306/huertohogar_catalog?useSSL=false&serverTimezone=America/Santiago&allowPublicKeyRetrieval=true"
             - name: SPRING_DATASOURCE_USERNAME
               valueFrom:
                 secretKeyRef:
