@@ -31,10 +31,9 @@ spec:
           imagePullPolicy: Always
           ports:
             - containerPort: 8082
-          envFrom:
-            - configMapRef:
-                name: catalogo-config
           env:
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:mysql://mysql-service:3306/huertohogar_catalog?useSSL=false&serverTimezone=America/Santiago"
             - name: SPRING_DATASOURCE_USERNAME
               valueFrom:
                 secretKeyRef:
@@ -50,6 +49,8 @@ spec:
                 secretKeyRef:
                   name: catalogo-secrets
                   key: JWT_SECRET
+            - name: SERVER_PORT
+              value: "8082"
           readinessProbe:
             httpGet:
               path: /actuator/health
